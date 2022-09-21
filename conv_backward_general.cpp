@@ -1,14 +1,6 @@
 #include "conv_backward_general.h"
 
 void regroup_prm(float *__restrict__ prm, float *__restrict__ prm_new, long L, long F, long Rx, long Ry){
- // улучшение с использованием интринсиков, не осоо быстрее стало, но небольшой прирост ест
-
-    // for(long f = 0; f < F; ++f)
-    //     for(long ry = 0; ry < Ry; ++ry)
-    //         for(long rx = 0; rx < Rx; ++rx)
-    //             for(long l = 0; l < L; ++l)
-	// 	            prm_new[l*Ry*Rx*F + ry*Rx*F + rx*F + f]=prm[f*Ry*Rx*L + ry*Rx*L + rx*L + l];
-
     __v2di p0, p1, p2, p3; //p4, p5, p6, p7;
     float *p0_p, *p1_p, *p2_p, *p3_p; //*p4_p, *p5_p, *p6_p, *p7_p;
 
@@ -19,33 +11,19 @@ void regroup_prm(float *__restrict__ prm, float *__restrict__ prm_new, long L, l
 
                     p0_p = (prm       + f*Ry*Rx*L + ry*Rx*L + rx*L + l); // f1
                     p1_p = (prm + (f + 1)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f2
-                        p2_p = (prm + (f + 2)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f3
+                    p2_p = (prm + (f + 2)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f3
                     p3_p = (prm + (f + 3)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f4
 
-                    // p4_p = (prm + (f + 4)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f1
-                    // p5_p = (prm + (f + 5)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f2
-                    // p6_p = (prm + (f + 6)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f3
-                    // p7_p = (prm + (f + 7)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f4
                 
                     __v2di p0 = ((__v2di)((__v4sf){*(p0_p    ), *(p1_p    ), *(p2_p    ), *(p3_p    )})); // l1
                     __v2di p1 = ((__v2di)((__v4sf){*(p0_p + 1), *(p1_p + 1), *(p2_p + 1), *(p3_p + 1)})); // l2
                     __v2di p2 = ((__v2di)((__v4sf){*(p0_p + 2), *(p1_p + 2), *(p2_p + 2), *(p3_p + 2)})); // l3
-                    __v2di p3 = ((__v2di)((__v4sf){*(p0_p + 3), *(p1_p + 3), *(p2_p + 3), *(p3_p + 3)})); // l4
-
-                    // __v2di p4 = ((__v2di)((__v4sf){*(p4_p    ), *(p5_p    ), *(p6_p    ), *(p7_p    )})); // l1
-                    // __v2di p5 = ((__v2di)((__v4sf){*(p4_p + 1), *(p5_p + 1), *(p6_p + 1), *(p7_p + 1)})); // l2
-                    // __v2di p6 = ((__v2di)((__v4sf){*(p4_p + 2), *(p5_p + 2), *(p6_p + 2), *(p7_p + 2)})); // l3
-                    // __v2di p7 = ((__v2di)((__v4sf){*(p4_p + 3), *(p5_p + 3), *(p6_p + 3), *(p7_p + 3)})); // l4
+                    __v2di p3 = ((__v2di)((__v4sf){*(p0_p + 3), *(p1_p + 3), *(p2_p + 3), *(p3_p + 3)})); // l4           
 
                     *((__v2di *) (prm_new +       l*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p0;
                     *((__v2di *) (prm_new + (l + 1)*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p1;
                     *((__v2di *) (prm_new + (l + 2)*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p2;
                     *((__v2di *) (prm_new + (l + 3)*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p3;
-
-                    // *((__v2di *) (prm_new + (l + 4)*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p4;
-                    // *((__v2di *) (prm_new + (l + 5)*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p5;
-                    // *((__v2di *) (prm_new + (l + 6)*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p6;
-                    // *((__v2di *) (prm_new + (l + 7)*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p7;
 
                 }
 
@@ -95,12 +73,6 @@ void core_backward_general_extended(float *__restrict__ in, float *__restrict__ 
     c06 = c00;                                c16 = c00; c26 = c00; c36 = c00; c46 = c00; c56 = c00; c66 = c00; c76 = c00;
     c07 = c00;                                c17 = c00; c27 = c00; c37 = c00; c47 = c00; c57 = c00; c67 = c00; c77 = c00;
 
-    
-    
-
-    // float* c0p = (float*)&c0;
-
-    // printf("с00 = %f", c0p[0]);
 
  #pragma loop count(1000)
     for(long f = 0; f < F; f+=8) {
@@ -359,15 +331,6 @@ void core_backward_general(float *__restrict__ in, float *__restrict__ prm, floa
         c16 = __builtin_e2k_qpfadds(__builtin_e2k_qpfmuls(a01, b16), c16);
         c17 = __builtin_e2k_qpfadds(__builtin_e2k_qpfmuls(a01, b17), c17);
 
-        // printf("c00 = %f, b01 = %f b02 = %f b03 = %f\n", *(float*)&c0, *((float*)&c0 + 1), *((float*)&c0 + 2), *((float*)&c0 + 3));
-        // printf("c10 = %f, b11 = %f b12 = %f b13 = %f\n", *(float*)&c1, *((float*)&c1 + 1), *((float*)&c1 + 2), *((float*)&c1 + 3));
-        // printf("c20 = %f, b11 = %f b12 = %f b13 = %f\n", *(float*)&c2, *((float*)&c2 + 1), *((float*)&c2 + 2), *((float*)&c2 + 3));
-        // printf("c30 = %f, b11 = %f b12 = %f b13 = %f\n", *(float*)&c3, *((float*)&c3 + 1), *((float*)&c3 + 2), *((float*)&c3 + 3));
-        // printf("c40 = %f, b11 = %f b12 = %f b13 = %f\n", *(float*)&c4, *((float*)&c4 + 1), *((float*)&c4 + 2), *((float*)&c4 + 3));
-        // printf("c50 = %f, b11 = %f b12 = %f b13 = %f\n", *(float*)&c5, *((float*)&c5 + 1), *((float*)&c5 + 2), *((float*)&c5 + 3));
-        // printf("c60 = %f, b11 = %f b12 = %f b13 = %f\n", *(float*)&c6, *((float*)&c6 + 1), *((float*)&c6 + 2), *((float*)&c6 + 3));
-        // printf("c70 = %f, b11 = %f b12 = %f b13 = %f\n", *(float*)&c7, *((float*)&c7 + 1), *((float*)&c7 + 2), *((float*)&c7 + 3));
-
     }
 
     *((__v2di *)(in))     = __builtin_e2k_qpfadds(__builtin_e2k_qpfhadds(
@@ -553,28 +516,7 @@ void conv_backward_general(float *__restrict__ in, float *__restrict__ prm, floa
             // shifting all float* out  from padding
             float *in_s  = in  + Y_pad_shift*X*L + X_pad_shift*L;
             float *out_s = out + Py*Xout*F + Px*F;
-
-
-            // main core
-            // #pragma omp for //schedule (auto)
-            // for(long b = 0; b < B; ++b)
-            //     for(long l = 0; l < L; l+=8)
-            //         for(long x = 0; x < Xcore_count; x++) 
-            //             for(long y = 0; y < Ycore_count; y++)
-            //                 for(long ry = 0; ry < Ry; ++ry)
-            //                     for(long rx = 0; rx < Rx; ++rx) {
-            //                         for(long i = 0; i < disp_y; ++i) 
-            //                             for(long j = 0; j < disp_x; ++j) {
-            //                                 core_backward_general_extended(\
-            //                                 in_s + b*Y*X*L + (y*disp_y*S*2 + ry + i*S)*X*L + (x*disp_x*S*2 + rx + j*S)*L + l,\
-            //                                 prm_new + l*Ry*Rx*F + ry*Rx*F + rx*F, \
-            //                                 out_s + b*Yout*Xout*F + (y*disp_y*2 + i)*Xout*F + (x*disp_x*2 + j)*F, F, Rx, Ry, disp_x*F, disp_y*Xout*F, disp_x*L*S, disp_y*X*L*S);
-            //                         }
-            //                     }
-
-         
-            // L_block = 312;
-            // L_bigg = (L / L_block) * L_block;
+  
           
             // main core   
             #pragma omp for schedule (auto)
@@ -611,92 +553,7 @@ void conv_backward_general(float *__restrict__ in, float *__restrict__ prm, floa
                                                 out_s + b*Yout*Xout*F + (y*disp_y*2 + i)*Xout*F + (x*disp_x*2 + j)*F, F, Rx, Ry, disp_x*F, disp_y*Xout*F, disp_x*L*S, disp_y*X*L*S);
                                         }
                                     }
-            }
-
-            // long X_block = 2;
-            // long X_bigg = (Xcore_count / X_block) * X_block;
-            // long Y_block = 2;
-            // long Y_bigg = (Ycore_count / Y_block) * Y_block;
-            // printf("Xcore_count = %d Ycore_count = %d\n", Xcore_count, Ycore_count);
-            // printf("X_block = %d Y_block = %d\n", X_block, Y_block);
-            // printf("X_bigg = %d, Y_bigg = %d\n", X_bigg, Y_bigg);
-          
-            // // main core   
-            // #pragma omp for schedule (auto)
-            // for(long b = 0; b < B; ++b)
-            //     for(long x = 0; x < X_bigg; x+=X_block) 
-            //         for(long y = 0; y < Y_bigg; y+=Y_block)
-            //             for(long l = 0; l < L; l++)
-            //                 for(long xx = 0; xx < X_block; xx++) 
-            //                     for(long yy = 0; yy < Y_block; yy++)
-            //                         for(long ry = 0; ry < Ry; ++ry)
-            //                             for(long rx = 0; rx < Rx; ++rx) {
-            //                                 for(long i = 0; i < disp_y; ++i) 
-            //                                     for(long j = 0; j < disp_x; ++j) {
-            //                                         core_backward_general_extended(\
-            //                                         in_s + b*Y*X*L + ((y + yy)*disp_y*S*2 + ry + i*S)*X*L + ((x + xx)*disp_x*S*2 + rx + j*S)*L + l,\
-            //                                         prm_new + l*Ry*Rx*F + ry*Rx*F + rx*F, \
-            //                                         out_s + b*Yout*Xout*F + ((y + yy)*disp_y*2 + i)*Xout*F + ((x + xx)*disp_x*2 + j)*F, F, Rx, Ry, disp_x*F, disp_y*Xout*F, disp_x*L*S, disp_y*X*L*S);
-            //                                 }
-            //                             }
-            // if(Xcore_count - X_bigg) {
-            //     #pragma omp for schedule (auto)
-            //     for(long b = 0; b < B; ++b)
-            //         for(long l = 0; l < L; l+=8)
-            //             for(long x = X_bigg; x < Xcore_count; x++) 
-            //                 for(long y = 0; y < Y_bigg; y++)
-            //                     for(long ry = 0; ry < Ry; ++ry)
-            //                         for(long rx = 0; rx < Rx; ++rx) {
-            //                             for(long i = 0; i < disp_y; ++i) 
-            //                                 for(long j = 0; j < disp_x; ++j) {
-            //                                     // printf("l = %d  ll = %d\n", l, ll);
-            //                                     core_backward_general_extended(\
-            //                                     in_s + b*Y*X*L + (y*disp_y*S*2 + ry + i*S)*X*L + (x*disp_x*S*2 + rx + j*S)*L + l,\
-            //                                     prm_new + l*Ry*Rx*F + ry*Rx*F + rx*F, \
-            //                                     out_s + b*Yout*Xout*F + (y*disp_y*2 + i)*Xout*F + (x*disp_x*2 + j)*F, F, Rx, Ry, disp_x*F, disp_y*Xout*F, disp_x*L*S, disp_y*X*L*S);
-            //                             }
-            //                         }
-            // }
-
-            // if(Xcore_count - X_bigg) {
-            //     #pragma omp for schedule (auto)
-            //     for(long b = 0; b < B; ++b)
-            //         for(long l = 0; l < L; l+=8)
-            //             for(long y = Y_bigg; y < Ycore_count; y++) 
-            //                 for(long x = 0; x < X_bigg; x++)
-            //                     for(long ry = 0; ry < Ry; ++ry)
-            //                         for(long rx = 0; rx < Rx; ++rx) {
-            //                             for(long i = 0; i < disp_y; ++i) 
-            //                                 for(long j = 0; j < disp_x; ++j) {
-            //                                     // printf("l = %d  ll = %d\n", l, ll);
-            //                                     core_backward_general_extended(\
-            //                                     in_s + b*Y*X*L + (y*disp_y*S*2 + ry + i*S)*X*L + (x*disp_x*S*2 + rx + j*S)*L + l,\
-            //                                     prm_new + l*Ry*Rx*F + ry*Rx*F + rx*F, \
-            //                                     out_s + b*Yout*Xout*F + (y*disp_y*2 + i)*Xout*F + (x*disp_x*2 + j)*F, F, Rx, Ry, disp_x*F, disp_y*Xout*F, disp_x*L*S, disp_y*X*L*S);
-            //                             }
-            //                         }
-            // }
-
-            // if(Xcore_count - X_bigg && Ycore_count - Y_bigg) {
-            //     #pragma omp for schedule (auto)
-            //     for(long b = 0; b < B; ++b)
-            //         for(long l = 0; l < L; l+=8)
-            //             for(long y = Y_bigg; y < Ycore_count; y++) 
-            //                 for(long x = X_bigg; x < Xcore_count; x++)
-            //                     for(long ry = 0; ry < Ry; ++ry)
-            //                         for(long rx = 0; rx < Rx; ++rx) {
-            //                             for(long i = 0; i < disp_y; ++i) 
-            //                                 for(long j = 0; j < disp_x; ++j) {
-            //                                     // printf("l = %d  ll = %d\n", l, ll);
-            //                                     core_backward_general_extended(\
-            //                                     in_s + b*Y*X*L + (y*disp_y*S*2 + ry + i*S)*X*L + (x*disp_x*S*2 + rx + j*S)*L + l,\
-            //                                     prm_new + l*Ry*Rx*F + ry*Rx*F + rx*F, \
-            //                                     out_s + b*Yout*Xout*F + (y*disp_y*2 + i)*Xout*F + (x*disp_x*2 + j)*F, F, Rx, Ry, disp_x*F, disp_y*Xout*F, disp_x*L*S, disp_y*X*L*S);
-            //                             }
-            //                         }
-            // }
-        
-        
+            }     
 
             // tail via Y
             #pragma omp for schedule (auto)
@@ -726,50 +583,7 @@ void conv_backward_general(float *__restrict__ in, float *__restrict__ prm, floa
                                 }
         }
         else {
-            // printf("here!!!\n");
-            // // main core  
-            // #pragma omp for schedule (auto)
-            // for(int b = 0; b < B; b++)
-            //     for(int l = 0; l < L; l+=8) {
-            //         for(int x = 0; x < Xout; x++)
-            //             for(int y = 0; y < Yout; y++)
-            //                 for(int rx = 0; rx < Rx; rx++)
-            //                     for(int ry = 0; ry  < Ry; ry++)
-            //                         if (x*S+rx-Px >= 0)
-            //                         if (y*S+ry-Py >= 0)
-            //                         if (x*S+rx-Px < X)
-            //                         if (y*S+ry-Py < Y) {
-            //                             core_backward_general(in + b*Y*X*L + (y*S + ry - Py)*X*L + (x*S + rx - Px)*L + l, prm_new + l*Ry*Rx*F + ry*Rx*F + rx*F, \
-            //                                                     out + b*Yout*Xout*F + y*Xout*F + x*F, F, Rx, Ry);   
-            //                         }
-            //     }
-
-            // #pragma omp for 
-            // for(int b = 0; b < B; b++)
-            //     for(int x = 0; x < Xout; x++)
-            //         for(int y = 0; y < Yout; y++)
-            //             for(int l = 0; l < L; l+=8) {
-            //                 for(int rx = 0; rx < Rx; rx++)
-            //                     for(int ry = 0; ry  < Ry; ry++)
-            //                         if (x*S+rx-Px >= 0)
-            //                         if (y*S+ry-Py >= 0)
-            //                         if (x*S+rx-Px < X)
-            //                         if (y*S+ry-Py < Y) {
-            //                             core_backward_general(in + b*Y*X*L + (y*S + ry - Py)*X*L + (x*S + rx - Px)*L + l, prm_new + l*Ry*Rx*F + ry*Rx*F + rx*F, \
-            //                                                     out + b*Yout*Xout*F + y*Xout*F + x*F, F, Rx, Ry);   
-            //                         }
-            //     }
-
-
-        //     L_block = 16;
-        //     // for(long l = 0; l <= L + 8; l+=8) {
-        //     //     if((l - L_block) > 0) {
-        //     //         L_block = l - 8;
-        //     //         break;
-        //     //     }
-        //     // }
-        //     long L_bigg = (L / L_block) * L_block;
-
+         
         //   main core  
             #pragma omp for schedule (auto)
             for(long b = 0; b < B; ++b)
@@ -806,7 +620,5 @@ void conv_backward_general(float *__restrict__ in, float *__restrict__ prm, floa
         }
     }
     }
-    
-    // core perf test (we want to define peak perf on r1s1p0)
-    // core_backward_general_extended(in, prm_new, out, F, Rx, Ry, F, Xout*F, L, X*L);
+
 			
