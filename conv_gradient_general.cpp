@@ -1,13 +1,6 @@
 #include "conv_gradient_general.h"
 
 void regroup_prm(float *__restrict__ prm, float *__restrict__ prm_new, long L, long F, long Rx, long Ry){
- // улучшение с использованием интринсиков, не осоо быстрее стало, но небольшой прирост ест
-
-    // for(long f = 0; f < F; ++f)
-    //     for(long ry = 0; ry < Ry; ++ry)
-    //         for(long rx = 0; rx < Rx; ++rx)
-    //             for(long l = 0; l < L; ++l)
-	// 	            prm_new[l*Ry*Rx*F + ry*Rx*F + rx*F + f]=prm[f*Ry*Rx*L + ry*Rx*L + rx*L + l];
 
     __v2di p0, p1, p2, p3; //p4, p5, p6, p7;
     float *p0_p, *p1_p, *p2_p, *p3_p; //*p4_p, *p5_p, *p6_p, *p7_p;
@@ -21,31 +14,17 @@ void regroup_prm(float *__restrict__ prm, float *__restrict__ prm_new, long L, l
                     p1_p = (prm + (f + 1)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f2
                         p2_p = (prm + (f + 2)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f3
                     p3_p = (prm + (f + 3)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f4
-
-                    // p4_p = (prm + (f + 4)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f1
-                    // p5_p = (prm + (f + 5)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f2
-                    // p6_p = (prm + (f + 6)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f3
-                    // p7_p = (prm + (f + 7)*Ry*Rx*L + ry*Rx*L + rx*L + l); // f4
                 
                     __v2di p0 = ((__v2di)((__v4sf){*(p0_p    ), *(p1_p    ), *(p2_p    ), *(p3_p    )})); // l1
                     __v2di p1 = ((__v2di)((__v4sf){*(p0_p + 1), *(p1_p + 1), *(p2_p + 1), *(p3_p + 1)})); // l2
                     __v2di p2 = ((__v2di)((__v4sf){*(p0_p + 2), *(p1_p + 2), *(p2_p + 2), *(p3_p + 2)})); // l3
                     __v2di p3 = ((__v2di)((__v4sf){*(p0_p + 3), *(p1_p + 3), *(p2_p + 3), *(p3_p + 3)})); // l4
 
-                    // __v2di p4 = ((__v2di)((__v4sf){*(p4_p    ), *(p5_p    ), *(p6_p    ), *(p7_p    )})); // l1
-                    // __v2di p5 = ((__v2di)((__v4sf){*(p4_p + 1), *(p5_p + 1), *(p6_p + 1), *(p7_p + 1)})); // l2
-                    // __v2di p6 = ((__v2di)((__v4sf){*(p4_p + 2), *(p5_p + 2), *(p6_p + 2), *(p7_p + 2)})); // l3
-                    // __v2di p7 = ((__v2di)((__v4sf){*(p4_p + 3), *(p5_p + 3), *(p6_p + 3), *(p7_p + 3)})); // l4
 
                     *((__v2di *) (prm_new +       l*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p0;
                     *((__v2di *) (prm_new + (l + 1)*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p1;
                     *((__v2di *) (prm_new + (l + 2)*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p2;
                     *((__v2di *) (prm_new + (l + 3)*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p3;
-
-                    // *((__v2di *) (prm_new + (l + 4)*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p4;
-                    // *((__v2di *) (prm_new + (l + 5)*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p5;
-                    // *((__v2di *) (prm_new + (l + 6)*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p6;
-                    // *((__v2di *) (prm_new + (l + 7)*Ry*Rx*F + ry*Rx*F + rx*F + f)) = p7;
 
                 }
 
@@ -70,14 +49,6 @@ void conv_gradient_general_core1x1(float *__restrict__ in, float *__restrict__ p
     __v2di bs0, bs1, bs2, bs3, bs4, bs5, bs6, bs7;
 
     float val;
-    // float bs0 = *(bs    );
-    // float bs1 = *(bs + 1);
-    // float bs2 = *(bs + 2);
-    // float bs3 = *(bs + 3);
-    // float bs4 = *(bs + 4);
-    // float bs5 = *(bs + 5);
-    // float bs6 = *(bs + 6);
-    // float bs7 = *(bs + 7);
 
     val = *(float*)(out);
     c0 = float4(val);
@@ -152,50 +123,7 @@ void conv_gradient_general_simple(float *__restrict__ in, float *__restrict__ pr
         memset(prm, 0.0, F*R*R*L*sizeof(float));
         #pragma omp parallel num_threads(16)
         {
-            
-            // long F_block = std::min(64, F);
-            // long F_current = F / F_block * F_block;
-            // long myid = omp_get_thread_num();
-            // printf("myid = %d\n", myid);
-            // #pragma omp for 
-            // for (long b = 0; b < B; b++)
-            // #pragma omp for 
-            //     for (long f = 0; f < F; f+=F_block)
-            //         for (long rx = 0; rx < R; rx++)
-            //             for (long ry = 0; ry < R; ry++) 
-            //                 for (long x = 0; x < Xout; x++)
-            //                     for (long y = 0; y < Yout; y++)
-            //                             for (long ff = 0; ff < F_block; ff+=8)
-            //                                 if (x*S+rx-P >= 0)
-            //                                     if (y*S+ry-P >= 0)
-            //                                         if (x*S+rx-P < X)
-            //                                             if (y*S+ry-P < Y)
-            //                                                 conv_gradient_general_core1x1( \
-            //                                                 in + b*Y*X*L + (y*S+ry-P)*X*L + (x*S+rx-P)*L, \
-            //                                                 prm + (f + ff)*L*R*R+ry*R*L+rx*L, \
-            //                                                 out + b*Yout*Xout*F+y*Xout*F+x*F+f+ff, L, R);
-
-    // if(F >= 512) {
-    //     F_block = 32;
-    //     #pragma omp for 
-    //             for (long f = 0; f < F; f+=F_block)        
-    //                 for (long b = 0; b < B; b++)
-    //                     for (long rx = 0; rx < R; rx++)
-    //                         for (long ry = 0; ry < R; ry++) 
-    //                             for (long x = 0; x < Xout; x++)
-    //                                 for (long y = 0; y < Yout; y++)
-    //                                 for (long ff = 0; ff < F_block; ff+=8)
-    //                                         if (x*S+rx-P >= 0)
-    //                                             if (y*S+ry-P >= 0)
-    //                                                 if (x*S+rx-P < X)
-    //                                                     if (y*S+ry-P < Y)
-    //                                                         conv_gradient_general_core1x1( \
-    //                                                         in + b*Y*X*L + (y*S+ry-P)*X*L + (x*S+rx-P)*L, \
-    //                                                         prm + (f+ff)*L*R*R+ry*R*L+rx*L, \
-    //                                                         out + b*Yout*Xout*F+y*Xout*F+x*F+f+ff, L, R);
-
-    // }
-    // else {
+        
         #pragma omp for 
                             for (long f = 0; f < F; f+=8) {    
                     for (long b = 0; b < B; b++)
@@ -226,33 +154,9 @@ void conv_gradient_general_simple(float *__restrict__ in, float *__restrict__ pr
                         bs[f+7] += out[b*Yout*Xout*F+y*Xout*F+x*F+f+7];
                     }
                             }
-    // }
-                
-            
-            // for (long b = 0; b < B; b++)
-            //     for (long rx = 0; rx < R; rx++)
-            //         for (long ry = 0; ry < R; ry++) 
-            //             for (long x = 0; x < Xout; x++)
-            //                 for (long y = 0; y < Yout; y++)
-            //                         // #pragma omp for
-            //                         for (long f = F_current; f < F; f+=8)
-            //                             if (x*S+rx-P >= 0)
-            //                                 if (y*S+ry-P >= 0)
-            //                                     if (x*S+rx-P < X)
-            //                                         if (y*S+ry-P < Y)
-            //                                             conv_gradient_general_core1x1( \
-            //                                             in + b*Y*X*L + (y*S+ry-P)*X*L + (x*S+rx-P)*L, \
-            //                                             prm + f*L*R*R+ry*R*L+rx*L, \
-            //                                             out + b*Yout*Xout*F+y*Xout*F+x*F+f, L, R);
+
         }
-        // #pragma omp for
-        // for (long f = 0; f < F; f++) {
-        //     bs[f] = 0;
-        //     for (int b = 0; b < B; b++)
-        //         for (int y = 0; y < Yout; y++)
-        //             for (int x = 0; x < Xout; x++)
-        //                 bs[f] += out[b*Yout*Xout*F+y*Xout*F+x*F+f];
-        // }
+      
 
     }
 
